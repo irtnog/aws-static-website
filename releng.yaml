@@ -1,0 +1,64 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+
+Description: >-
+  This AWS CloudFormation template creates resources used to host the aws-static-website CloudFormation template.
+
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterLabels:
+      ReleaseBucket:
+        default: Release Bucket
+      ReleaseFolder:
+        default: Release Folder
+    ParameterGroups:
+      - Label:
+          default: Infrastructure Settings
+        Parameters:
+          - ReleaseBucket
+          - ReleaseFolder
+
+
+Parameters:
+  ReleaseBucket:
+    Type: String
+    Default: irtnog-aws-static-website
+    Description: >-
+      The stack will create this S3 bucket to host template releases.
+    # https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html#bucketnamingrules
+    MaxLength: 63
+    AllowedPattern: '(^[a-z0-9][a-z0-9\.-]+[a-z0-9])'
+    ConstraintDescription: >
+      This must conform to S3 bucket name restrictions.
+  ReleaseFolder:
+    Type: String
+    Default: ''
+    Description: >-
+      The optional path to a folder in the ReleaseBucket that contains the release.
+      If not left blank, it must end with a '/'.
+    # https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html#object-keys
+    MaxLength: 100
+    AllowedPattern: '(^([A-Za-z0-9_\.-]+/)*)'
+    ConstraintDescription: >
+      This must conform to S3 object key name restrictions.
+
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      AccessControl: PublicRead
+      BucketName: !Ref ReleaseBucket
+
+
+Outputs:
+  Bucket:
+    Description: The ID of the S3 bucket holding the aws-static-website CloudFormation template
+    Value: !Ref ReleaseBucket
+
+  BucketUrl:
+    Description: The URL of the S3 location containing the aws-static-website CloudFormation template
+    Value: !Join [ '/', [ 's3://', !Ref ReleaseBucket, !Ref ReleaseFolder ] ]
