@@ -1,0 +1,84 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+
+Parameters:
+  Name:
+    Type: String
+  FullyQualifiedDomainName:
+    Type: String
+  CertificateArn:
+    Type: String
+  BucketName:
+    Type: String
+  BucketArn:
+    Type: String
+  BucketRegionalFqdn:
+    Type: String
+  CloudFrontPriceClass:
+    Type: String
+    AllowedValues:
+      - PriceClass_100
+      - PriceClass_200
+      - PriceClass_All
+
+
+Resources:
+  OriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Ref Name
+
+  
+  OriginAccessPermissions:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref BucketName
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:GetObject
+            Effect: Allow
+            Resource: !Sub ${BucketArn}/*
+            Principal:
+              CanonicalUser: !GetAtt OriginAccessIdentity.S3CanonicalUserId
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: !Ref Name
+        Enabled: true
+        HttpVersion: http2
+        PriceClass: !Ref CloudFrontPriceClass
+        Origins:
+          - S3OriginConfig:
+              OriginAccessIdentity: !Sub origin-access-identity/cloudfront/${OriginAccessIdentity}
+            DomainName: !Ref BucketRegionalFqdn
+            Id: !Sub S3-${BucketName}
+        DefaultRootObject: index.html
+        DefaultCacheBehavior:
+          TargetOriginId: !Sub S3-${BucketName}
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+          # CachingOptimized managed cache policy
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          # UserAgentRefererHeaders managed origin request policy
+          OriginRequestPolicyId: acba4595-bd28-49b8-b9fe-13317c0390fa
+          Compress: true
+        Aliases: [ !Ref FullyQualifiedDomainName ]
+        ViewerCertificate:
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2019
+          AcmCertificateArn: !Ref CertificateArn
+
+
+Outputs:
+  DistributionId:
+    Value: !Ref Distribution
+
+  DistributionFqdn:
+    Value: !GetAtt Distribution.DomainName
