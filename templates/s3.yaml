@@ -1,0 +1,48 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+
+Parameters:
+  Name:
+    Type: String
+  S3ServerSideEncryption:
+    Type: String
+    AllowedValues:
+      - SSE-S3
+      - SSE-KMS
+  S3EncryptionKeyArn:
+    Type: String
+
+
+Conditions:
+  S3UseDefaultEncryption:
+    !Equals [ !Ref S3ServerSideEncryption, SSE-S3 ]
+  S3UseDefaultEncryptionKey:
+    !Equals [ !Ref S3EncryptionKeyArn, '' ]
+
+
+Resources:
+  WebsiteContent:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: !If [ S3UseDefaultEncryption, AES256, aws:kms ]
+              KMSMasterKeyID: !If [ S3UseDefaultEncryption, !Ref AWS::NoValue, !If [ S3UseDefaultEncryptionKey, !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/s3', !Ref S3EncryptionKeyArn ] ]
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+
+
+Outputs:
+  BucketName:
+    Value: !Ref WebsiteContent
+
+  BucketArn:
+    Value: !GetAtt WebsiteContent.Arn
+
+  BucketRegionalFqdn:
+    Value: !GetAtt WebsiteContent.RegionalDomainName
