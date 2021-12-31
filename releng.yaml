@@ -3,7 +3,7 @@ AWSTemplateFormatVersion: 2010-09-09
 
 
 Description: >-
-  This AWS CloudFormation template creates resources used to host the aws-static-website CloudFormation template.
+  This AWS CloudFormation stack manages resources used to host the irtnog-aws-static-website CloudFormation template.
 
 
 Metadata:
@@ -56,9 +56,9 @@ Resources:
 
 Outputs:
   Bucket:
-    Description: The ID of the S3 bucket holding the aws-static-website CloudFormation template
+    Description: The ID of the S3 bucket holding the irtnog-aws-static-website CloudFormation template
     Value: !Ref ReleaseBucket
 
   BucketUrl:
-    Description: The URL of the S3 location containing the aws-static-website CloudFormation template
-    Value: !Join [ '/', [ 's3://', !Ref ReleaseBucket, !Ref ReleaseFolder ] ]
+    Description: The URL of the S3 location containing the irtnog-aws-static-website CloudFormation template
+    Value: !Sub s3://${ReleaseBucket}/${ReleaseFolder}
