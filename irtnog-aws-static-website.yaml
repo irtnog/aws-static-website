@@ -1,0 +1,134 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+
+Description: >-
+  This AWS CloudFormation stack hosts a static website using Amazon S3 and Amazon CloudFront.
+
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterLabels:
+      TemplateBucket:
+        default: Template Bucket
+      TemplateFolder:
+        default: Template Folder
+      FullyQualifiedDomainName:
+        default: Fully Qualified Domain Name
+      CertificateArn:
+        default: Certificate ARN
+      S3ServerSideEncryption:
+        default: S3 Server-Side Encryption Key Type
+      S3EncryptionKeyArn:
+        default: AWS KMS Key ARN for SSE-KMS
+      CloudFrontPriceClass:
+        default: CloudFront Distribution Price Class
+    ParameterGroups:
+      - Label:
+          default: Stack Settings
+        Parameters:
+          - TemplateBucket
+          - TemplateFolder
+          - FullyQualifiedDomainName
+          - CertificateArn
+      - Label:
+          default: Infrastructure Settings
+        Parameters:
+          - S3ServerSideEncryption
+          - S3EncryptionKeyArn
+          - CloudFrontPriceClass
+
+
+Parameters:
+  TemplateBucket:
+    Type: String
+    Default: irtnog-aws-static-website
+    Description: >-
+      The stack will retrieve deployment resources from this S3 bucket.
+      The bucket must reside in the us-east-1 region.
+    # https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html#bucketnamingrules
+    MaxLength: 63
+    AllowedPattern: '(^[a-z0-9][a-z0-9\.-]+[a-z0-9])'
+    ConstraintDescription: >
+      This must conform to S3 bucket name restrictions.
+  TemplateFolder:
+    Type: String
+    Default: ''
+    Description: >-
+      The stack will retrieve deployment resources from this folder in the TemplateBucket.
+      If not left blank, it must end with a '/'.
+    # https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html#object-keys
+    MaxLength: 100
+    AllowedPattern: '(^([A-Za-z0-9_\.-]+/)*)'
+    ConstraintDescription: >
+      This must conform to S3 object key name restrictions.
+  FullyQualifiedDomainName:
+    Type: String
+  CertificateArn:
+    Type: String
+
+  S3ServerSideEncryption:
+    Type: String
+    Default: SSE-S3
+    AllowedValues:
+      - SSE-S3
+      - SSE-KMS
+    Description: >-
+      The stack will encrypt the S3 storage with a key of this type.
+      By default, it uses Amazon S3-managed (SSE-S3) 256-bit Advanced Encryption Standard (AES-256) encryption keys.
+      Alternatively, it can use the AWS Key Management Service (SSE-KMS).
+      SSE-KMS costs more but enables key usage auditing and offers better control over key management.
+      AWS KMS keys must be in the same region as the bucket.
+  S3EncryptionKeyArn:
+    Type: String
+    Default: ''
+    Description: >-
+      If using SSE-KMS, the stack will use this (symmetric) KMS master key to encrypt the S3 storage.
+  CloudFrontPriceClass:
+    Type: String
+    Default: PriceClass_All
+    AllowedValues:
+      - PriceClass_100
+      - PriceClass_200
+      - PriceClass_All
+    Description: >-
+      The price class for the web site content delivery network (CDN).
+
+
+Resources:
+  S3:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${TemplateBucket}.s3.amazonaws.com/${TemplateFolder}templates/s3.yaml
+      Parameters:
+        Name: !Ref AWS::StackName
+        S3ServerSideEncryption: !Ref S3ServerSideEncryption
+        S3EncryptionKeyArn: !Ref S3EncryptionKeyArn
+
+  CloudFront:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${TemplateBucket}.s3.amazonaws.com/${TemplateFolder}templates/cloudfront.yaml
+      Parameters:
+        Name: !Ref AWS::StackName
+        FullyQualifiedDomainName: !Ref FullyQualifiedDomainName
+        CertificateArn: !Ref CertificateArn
+        BucketName: !GetAtt S3.Outputs.BucketName
+        BucketArn: !GetAtt S3.Outputs.BucketArn
+        BucketRegionalFqdn: !GetAtt S3.Outputs.BucketRegionalFqdn
+        CloudFrontPriceClass: !Ref CloudFrontPriceClass
+
+
+Outputs:
+  ContentBucket:
+    Description: The name of the S3 bucket holding the website's contents
+    Value: !GetAtt S3.Outputs.BucketName
+
+  DistributionId:
+    Description: The identifier of the CloudFront distribution serving the website
+    Value: !GetAtt CloudFront.Outputs.DistributionId
+
+  DistributionFqdn:
+    Description: The fully qualified domain name of the CloudFront distribution serving the website
+    Value: !GetAtt CloudFront.Outputs.DistributionFqdn
+  
