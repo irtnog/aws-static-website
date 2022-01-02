@@ -29,7 +29,7 @@ Alternatively, to deploy the stack from the command line on a PC or Mac:
   
 - Optionally, set (and export) the environment variable **AWS_REGION** to the AWS data center cluster to which the CloudFormation stack will be deployed, e.g., `us-east-1`.
 
-In the example commands shown below, these environment variables will be used as follows:
+In the example commands shown below, these shell variables will be used as follows:
 
 - **TEMPLATE_BUCKET** is the S3 bucket hosting the CloudFormation templates, e.g., `devops-library-${AWS_REGION}`, `cf-templates-1234567890abc-${AWS_REGION}`.
   While you may deploy the stack from the release bucket, `irtnog-aws-static-website`, we recommend deploying from an S3 bucket under your control.
