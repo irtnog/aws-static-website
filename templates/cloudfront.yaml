@@ -44,6 +44,82 @@ Resources:
             Principal:
               CanonicalUser: !GetAtt OriginAccessIdentity.S3CanonicalUserId
 
+  SecurityHeaders:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub ${Name}-SecurityHeaders
+        SecurityHeadersConfig:
+          ContentSecurityPolicy:
+            ContentSecurityPolicy: default-src 'self'; upgrade-insecure-requests
+            Override: True
+          ContentTypeOptions:
+            Override: true
+          FrameOptions:
+            FrameOption: DENY
+            Override: true
+          ReferrerPolicy:
+            ReferrerPolicy: no-referrer
+            Override: true
+          StrictTransportSecurity:
+            AccessControlMaxAgeSec: 63072000
+            IncludeSubdomains: true
+            Preload: true
+            Override: true
+          XSSProtection:
+            Protection: true
+            ModeBlock: true
+            Override: true
+        CustomHeadersConfig:
+          Items:
+            - Header: Expect-CT
+              Value: max-age=7776000, enforce
+              Override: true
+            - Header: Permissions-Policy
+              Value:
+                accelerometer=(),
+                ambient-light-sensor=(),
+                autoplay=(),
+                battery=(),
+                camera=(),
+                cross-origin-isolated=(),
+                display-capture=(),
+                document-domain=(),
+                encrypted-media=(),
+                execution-while-not-rendered=(),
+                execution-while-out-of-viewport=(),
+                fullscreen=(),
+                geolocation=(),
+                gyroscope=(),
+                keyboard-map=(),
+                magnetometer=(),
+                microphone=(),
+                midi=(),
+                navigation-override=(),
+                payment=(),
+                picture-in-picture=(),
+                publickey-credentials-get=(),
+                screen-wake-lock=(),
+                sync-xhr=(),
+                usb=(),
+                web-share=(),
+                xr-spatial-tracking=(),
+                clipboard-read=(),
+                clipboard-write=(),
+                gamepad=(),
+                speaker-selection=(),
+                conversion-measurement=(),
+                focus-without-user-activation=(),
+                hid=(),
+                idle-detection=(),
+                interest-cohort=(),
+                serial=(),
+                sync-script=(),
+                trust-token-redemption=(),
+                window-placement=(),
+                vertical-scroll=()
+              Override: true
+
   Distribution:
     Type: AWS::CloudFront::Distribution
     Properties:
