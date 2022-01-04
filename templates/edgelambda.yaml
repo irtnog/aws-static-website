@@ -1,0 +1,120 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+
+Parameters:
+  Name:
+    Type: String
+
+
+Resources:
+  SecurityHeadersRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+                - edgelambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  SecurityHeadersFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Role: !GetAtt SecurityHeadersRole.Arn
+      Runtime: nodejs14.x
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          'use strict';
+          exports.handler = (evt, ctx, cb) => {
+              const res = evt.Records[0].cf.response;
+              const head = res.headers;
+              head['strict-transport-security'] = [{
+                  key: 'Strict-Transport-Security',
+                  value: 'max-age=63072000; includeSubdomains; preload'
+              }];
+              head['content-security-policy'] = [{
+                  key: 'Content-Security-Policy',
+                  value: "default-src 'none'; img-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'"
+              }];
+              head['x-content-type-options'] = [{
+                  key: 'X-Content-Type-Options',
+                  value: 'nosniff'
+              }];
+              head['x-frame-options'] = [{
+                  key: 'X-Frame-Options',
+                  value: 'DENY'
+              }];
+              head['x-xss-protection'] = [{
+                  key: 'X-XSS-Protection',
+                  value: '1; mode=block'
+              }];
+              head['referrer-policy'] = [{
+                  key: 'Referrer-Policy',
+                  value: 'same-origin'
+              }];
+              cb(null, res);
+          }
+
+  PublishVersionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: PublishVersion
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:PublishVersion
+                Resource:
+                  - !GetAtt SecurityHeadersFunction.Arn
+
+  PublishVersionFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Role: !GetAtt PublishVersionRole.Arn
+      Runtime: nodejs14.x
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          const AWS = require('aws-sdk');
+          const { send, SUCCESS, FAILED } = require('cfn-response');
+          const lambda = new AWS.Lambda();
+          exports.handler = (evt, ctx) => {
+              const rt = evt.RequestType;
+              const fn = evt.ResourceProperties.FunctionName;
+              if (rt == 'Delete') { return send(evt, ctx, SUCCESS; }
+              lambda.publishVersion({FunctionName: fn}, (err, data) => {
+                  if (err) send(evt, ctx, FAILED, err);
+                  else     send(evt, ctx, SUCCESS, { FunctionArn: data.FunctionArn });
+              });
+          }
+
+  # cf. https://gist.github.com/jed/56b1f58297d374572bc51c59394c7e7f
+  # cf. https://docs.aws.amazon.com/lambda/latest/dg/services-cloudformation.html
+  # cf. https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources-lambda.html
+  SecurityHeadersVersion:
+    Type: Custom::LatestLambdaVersion
+    Properties:
+      ServiceToken: !GetAtt PublishVersionFunction.Arn
+      FunctionName: !Ref SecurityHeadersFunction
+
+
+Outputs:
+  SecurityHeadersFunctionArn:
+    Value: !GetAtt SecurityHeadersVersion.FunctionArn
