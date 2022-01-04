@@ -26,8 +26,6 @@ Alternatively, to deploy the stack from the command line on a PC or Mac:
   On macOS, use [MacPorts](https://www.macports.org/) (preferred) or [HomeBrew](https://brew.sh/) to install jq.
 
 - Optionally, set (and export) the environment variable **AWS_PROFILE** to the AWS CLI [named profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) to use, e.g., `corpdev`.
-  
-- Optionally, set (and export) the environment variable **AWS_REGION** to the AWS data center cluster to which the CloudFormation stack will be deployed, e.g., `us-east-1`.
 
 In the example commands shown below, these shell variables will be used as follows:
 
@@ -38,6 +36,10 @@ In the example commands shown below, these shell variables will be used as follo
 - **STACK_NAME** is a globally unique ID for the CloudFormation stack, e.g., `example-web-site`.
 
 - **HOSTNAME** is the website's fully qualified domain name (FQDN), e.g., `www.example.com`.
+
+## Restrictions
+
+The stack must be deployed in the us-east-1 (US East - N. Virginia) region since it uses a [Lambda@Edge origin response function](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-edge-how-it-works.html) to implement [web security headers](https://aws.amazon.com/blogs/networking-and-content-delivery/adding-http-security-headers-using-lambdaedge-and-amazon-cloudfront/).
 
 ## Certificate
 
@@ -51,6 +53,7 @@ eval $(
     aws acm request-certificate \
         --domain-name "${HOSTNAME}" \
         --validation-method DNS \
+        --region us-east-1 \
         --output json \
     | jq -r '@sh "CERTARN=\(.CertificateArn)"'
 )
@@ -61,6 +64,7 @@ do
     eval $(
         aws acm describe-certificate \
             --certificate-arn "${CERTARN}" \
+            --region us-east-1 \
             --output json \
         | jq -r '.Certificate.DomainValidationOptions[0].ResourceRecord
         | @sh "CERTDCVRRNAME=\(.Name); CERTDCVRRTYPE=\(.Type); CERTDCVRRVALUE=\(.Value)"'
@@ -97,50 +101,9 @@ EOF
 
 ## Deployment
 
-Launch the CloudFormation stack in your AWS account using one of the following links:
+Launch the CloudFormation stack in your AWS account using the following link:
 
-| AWS Region Code    | AWS Region Name                        | Launch                                                                                                                                                                                                                                                                                                                             |
-|--------------------|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| us-east-1          | US East (N. Virginia)                  | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)          |
-| us-east-2          | US East (Ohio)                         | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)          |
-| us-west-1          | US West (N. California)                | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)          |
-| us-west-2          | US West (Oregon)                       | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)          |
-| ca-central-1       | Canada (Montreal)                      | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ca-central-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)       |
-| eu-north-1         | EU (Stockholm)                         | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-north-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)         |
-| eu-west-3          | EU (Paris)                             | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-west-3#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)          |
-| eu-west-2          | EU (London)                            | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-west-2#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)          |
-| eu-west-1          | EU (Ireland)                           | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)          |
-| eu-central-1       | EU (Frankfurt)                         | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)       |
-| eu-south-1         | EU (Milan)                             | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-south-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)         |
-| ap-south-1         | Asia Pacific (Mumbai)                  | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-south-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)         |
-| ap-northeast-1     | Asia Pacific (Tokyo)                   | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)     |
-| ap-northeast-2     | Asia Pacific (Seoul)                   | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-2#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)     |
-| ap-northeast-3     | Asia Pacific (Osaka-Local)             | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-3#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)     |
-| ap-southeast-1     | Asia Pacific (Singapore)               | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-southeast-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)     |
-| ap-southeast-2     | Asia Pacific (Sydney)                  | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-southeast-2#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)     |
-| ap-southeast-3     | Asia Pacific (Jakarta)                 | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-southeast-3#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)     |
-| ap-east-1          | Asia Pacific (Hong Kong) SAR           | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-east-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)          |
-| sa-east-1          | South America (São Paulo)              | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=sa-east-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)          |
-| cn-north-1         | China (Beijing)                        | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=cn-north-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)         |
-| cn-northwest-1     | China (Ningxia)                        | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=cn-northwest-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)     |
-| us-gov-east-1      | GovCloud (US-East)                     | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-gov-east-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)      |
-| us-gov-west-1      | GovCloud (US-West)                     | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-gov-west-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)      |
-| us-gov-secret-1    | AWS Secret Region (US-Secret)          | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-gov-secret-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)    |
-| us-gov-topsecret-1 | AWS Top Secret-East Region (US-Secret) | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-gov-topsecret-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml) |
-| us-gov-topsecret-2 | AWS Top Secret-West Region (US-Secret) | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-gov-topsecret-2#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml) |
-| me-south-1         | Middle East (Bahrain)                  | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=me-south-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)         |
-| af-south-1         | Africa (Cape Town)                     | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=af-south-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)         |
-| eu-east-1          | EU (Spain)                             | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-east-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)          |
-| eu-central-2       | EU (Zurich)                            | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-central-2#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)       |
-| ap-south-2         | Asia Pacific (Hyderabad)               | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-south-2#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)         |
-| ap-southeast-3     | Asia Pacific (Melbourne)               | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-southeast-3#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)     |
-| me-south-2         | Middle East (United Arab Emirates)     | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=me-south-2#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)         |
-| eu-north-1         | EU (Estonia)                           | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-north-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)         |
-| eu-south-1         | EU (Cyprus)                            | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-south-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)         |
-| me-west-1          | Middle East (Tel Aviv)                 | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=me-west-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)          |
-| ru-central-1       | Russia (TBD)                           | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ru-central-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)       |
-| ap-southeast-4     | Asia Pacific (Auckland)                | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-southeast-4#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)     |
-| ca-west-1          | Canada (Calgary)                       | [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ca-west-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)          |
+[![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=StaticWebsite&templateURL=https://s3.amazonaws.com/irtnog-aws-static-website/irtnog-aws-static-website.yaml)
 
 Alternatively, launch the stack using commands similar to the following:
 
@@ -155,11 +118,12 @@ eval $(
 aws cloudformation create-stack \
     --stack-name ${STACK_NAME} \
     --template-url https://s3.amazonaws.com/${TEMPLATE_BUCKET}/irtnog-aws-static-website.yaml \
+    --capabilities CAPABILITY_IAM \
     --parameters \
         ParameterKey=TemplateBucket,ParameterValue=${TEMPLATE_BUCKET} \
         ParameterKey=FullyQualifiedDomainName,ParameterValue=${HOSTNAME} \
         ParameterKey=CertificateArn,ParameterValue=${CERTARN} \
-;
+    --region us-east-1
 ```
 
 To publish your website, create a [CNAME record](https://en.wikipedia.org/wiki/CNAME_record) for the website's FQDN that points to the stack's `DistributionFqdn` output value.  Note that certain restrictions apply to CNAME records.
@@ -175,6 +139,7 @@ eval $(
 eval $(
     aws cloudformation describe-stacks \
         --stack-name ${STACK_NAME} \
+        --region us-east-1 \
         --output json \
     | jq -r '.Stacks[0].Outputs[]|select(.OutputKey == "DistributionFqdn")
     | @sh "DISTNAME=\(.OutputValue)"'
