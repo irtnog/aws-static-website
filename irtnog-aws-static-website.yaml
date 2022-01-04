@@ -105,6 +105,13 @@ Resources:
         S3ServerSideEncryption: !Ref S3ServerSideEncryption
         S3EncryptionKeyArn: !Ref S3EncryptionKeyArn
 
+  EdgeLambda:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${TemplateBucket}.s3.amazonaws.com/${TemplateFolder}templates/edgelambda.yaml
+      Parameters:
+        Name: !Ref AWS::StackName
+
   CloudFront:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -117,6 +124,7 @@ Resources:
         BucketArn: !GetAtt S3.Outputs.BucketArn
         BucketRegionalFqdn: !GetAtt S3.Outputs.BucketRegionalFqdn
         CloudFrontPriceClass: !Ref CloudFrontPriceClass
+        SecurityHeadersFunctionArn: !GetAtt EdgeLambda.Outputs.SecurityHeadersFunctionArn
 
 
 Outputs:
