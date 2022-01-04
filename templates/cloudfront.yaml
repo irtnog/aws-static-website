@@ -21,6 +21,8 @@ Parameters:
       - PriceClass_100
       - PriceClass_200
       - PriceClass_All
+  SecurityHeadersFunctionArn:
+    Type: String
 
 
 Resources:
@@ -69,6 +71,9 @@ Resources:
           # UserAgentRefererHeaders managed origin request policy
           OriginRequestPolicyId: acba4595-bd28-49b8-b9fe-13317c0390fa
           Compress: true
+          LambdaFunctionAssociations:
+            - EventType: origin-response
+              LambdaFunctionARN: !Ref SecurityHeadersFunctionArn
         Aliases: [ !Ref FullyQualifiedDomainName ]
         ViewerCertificate:
           SslSupportMethod: sni-only
